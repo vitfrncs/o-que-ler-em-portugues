@@ -1,8 +1,6 @@
-"""BookMatch AI — Oceanos: enriquecimento Apple Books + editoras (uma execução).
+"""Oceanos: enriquecimento Apple Books + editoras (uma execução).
 
 Metas por gênero, cadastro consolidado de editoras, persistência CSV e auditoria.
-O status 'candidate' NÃO concede autorização de reutilização pública.
-
 Uso na raiz do repositório:
   python scripts/enrich_oceanos_auto.py --input data/raw/oceanos.csv --per-genre 100 --limit 15
 """

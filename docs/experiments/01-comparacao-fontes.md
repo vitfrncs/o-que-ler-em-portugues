@@ -1,6 +1,6 @@
 # Experimentos de seleção e enriquecimento de fontes bibliográficas
 
-**Projeto:** BookMatch AI  
+**Projeto:** BookMatch
 **Etapa:** Construção do catálogo literário  
 **Status:** Documentação retrospectiva  
 **Última atualização:** 05/11/2026

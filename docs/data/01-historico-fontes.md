@@ -1,6 +1,6 @@
 # Histórico de seleção e enriquecimento das fontes de dados
 
-**Projeto:** BookMatch AI  
+**Projeto:** BookMatch   
 **Etapa:** Construção do catálogo literário  
 **Status:** Documentação retrospectiva dos experimentos  
 **Última atualização:** 05/11/2026

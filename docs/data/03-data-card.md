@@ -1,6 +1,6 @@
-# Data Card — Catálogo Literário do BookMatch AI
+# Data Card — Catálogo Literário do BookMatch
 
-**Projeto:** BookMatch AI  
+**Projeto:** BookMatch  
 **Dataset:** Catálogo literário enriquecido  
 **Versão:** Experimental v0  
 **Data da análise:** 05/11/2026  
