@@ -1,84 +1,228 @@
 # O Que Ler em Português?
 
-O Que Ler em Português? é uma aplicação de descoberta de livros originalmente escritos em língua portuguesa. A ideia é ajudar pessoas a encontrar novas leituras a partir de temas, gêneros e características de histórias de que gostam, aproximando obras de diferentes países que compartilham a língua.
+O Que Ler em Português? (BookMatch) é um projeto de descoberta literária que utiliza recuperação semântica e modelos de linguagem para recomendar livros originalmente escritos em português.
 
-A aplicação combina recuperação de informação e processamento de linguagem natural. A busca semântica utiliza embeddings de descrições literárias para identificar livros relacionados a uma consulta, mesmo quando não há correspondência exata entre as palavras. A próxima etapa é integrar essa recuperação a um pipeline de *Retrieval-Augmented Generation* (RAG), no qual um modelo de linguagem produzirá recomendações fundamentadas nas informações recuperadas do catálogo.
+A aplicação permite buscar obras a partir de uma descrição em linguagem natural ou de livros de referência. Em ambos os casos, a recuperação é realizada sobre um catálogo literário construído e preparado durante o desenvolvimento do projeto.
 
-O desenvolvimento começou pela construção do catálogo literário. Como a busca precisa considerar mais do que títulos e autores, foi necessário reunir descrições, verificar correspondências entre fontes e preparar os registros para a indexação semântica.
+O projeto também explora o uso de Retrieval-Augmented Generation (RAG) para produzir recomendações fundamentadas nas informações recuperadas, em vez de depender apenas do conhecimento do modelo de linguagem.
+
+O sistema ainda está em desenvolvimento, principalmente no que diz respeito à qualidade do catálogo e à avaliação das recomendações.
 
 ## Construção do catálogo
 
-O ponto de partida foi um levantamento de obras relacionadas ao Prêmio Oceanos, utilizado como referência bibliográfica para a seleção inicial. O objetivo não era apenas reunir títulos, mas construir uma base com metadados suficientes para buscar livros por características de suas histórias.
+O desenvolvimento começou pela construção de uma base de dados literária. Como a proposta é recuperar livros a partir de temas, gêneros e características narrativas, não seria suficiente utilizar apenas títulos e autores.
 
-A preparação dos dados envolveu padronização de títulos e autores, organização dos gêneros, identificação de duplicatas e investigação de registros incompletos. Para enriquecer os dados, foram exploradas diferentes fontes, incluindo a Apple Books e páginas de editoras. Também foram realizados levantamentos e testes com outras fontes, como Skoob e Wikipédia, documentados no repositório.
+O ponto de partida foi um levantamento de obras relacionadas ao Prêmio Oceanos. Os registros passaram por etapas de padronização, identificação de duplicatas e enriquecimento de metadados.
 
-Como uma mesma obra pode aparecer com títulos, edições e metadados diferentes, o enriquecimento exigiu verificar as correspondências encontradas antes de incorporar as descrições. O catálogo preserva informações de proveniência, como fonte, URL e método de extração, além de campos que ajudam a identificar o estado de revisão de cada registro.
+As descrições literárias foram obtidas principalmente por meio da Apple Books e de páginas de editoras. Outras fontes, como Skoob e Wikipédia, também foram investigadas durante o desenvolvimento.
 
-A versão experimental utilizada atualmente contém 469 obras de 390 autores, distribuídas entre romance, conto, poesia, crônica e dramaturgia. Das descrições reunidas, 334 vieram da Apple Books e 135 de páginas de editoras.
+A versão experimental do catálogo contém:
 
-Os dados processados são armazenados localmente em `data/processed/catalog_v0.csv`. A leitura é feita por `load_catalog()`, em `src/bookmatch/data/loader.py`, que verifica colunas obrigatórias, campos ausentes ou vazios e identificadores duplicados. O processo de construção e análise dos dados está registrado em `docs/data/`, `experiments/data_sources/` e `scripts/`.
+- 469 obras de 390 autores;
+- 334 descrições obtidas da Apple Books;
+- 135 descrições obtidas de páginas de editoras;
+- obras distribuídas entre romance, conto, poesia, crônica e dramaturgia.
 
-O catálogo ainda possui limitações. A verificação de quais obras foram originalmente escritas em português e a revisão das condições de reutilização de algumas descrições não estão concluídas. Por esse motivo, os arquivos completos de dados não são distribuídos publicamente neste momento.
+Os registros também preservam informações de proveniência, como a fonte utilizada e o método de obtenção dos dados.
+
+A preparação e a investigação das fontes estão documentadas em `docs/data/`, `experiments/data_sources/` e `scripts/`.
+
+O catálogo é armazenado localmente em `data/processed/catalog_v0.csv`. Sua leitura é realizada pelo módulo `bookmatch.data.loader`, responsável por validar a estrutura dos registros.
+
+Os dados processados não são distribuídos publicamente neste momento, pois a revisão das condições de reutilização de algumas descrições ainda não foi concluída.
 
 ## Recuperação semântica
 
-A primeira implementação de recuperação utiliza o modelo pré-treinado `intfloat/multilingual-e5-small`, por meio da biblioteca Sentence Transformers. Cada livro é representado por um texto composto de título, gênero e descrição, preparado pela função `build_book_text()` em `src/bookmatch/retrieval/semantic.py`.
+O projeto utiliza o modelo pré-treinado `intfloat/multilingual-e5-small`, da biblioteca Sentence Transformers, para representar os livros e as consultas como embeddings.
 
-Na indexação, os textos recebem o prefixo `passage:`, conforme a convenção de uso do E5. O script `scripts/build_embeddings.py` processa os livros em lotes, gera vetores normalizados de 384 dimensões e os salva em um arquivo NumPy `.npz`, junto aos respectivos `book_id` e ao nome do modelo. O índice é gerado previamente para que a aplicação não precise recalcular todos os embeddings a cada consulta.
+Cada obra é representada por um texto construído a partir de seus metadados, incluindo título, gênero e descrição.
 
-A recuperação segue o mesmo princípio: o texto enviado pelo usuário recebe o prefixo `query:` e é transformado em um embedding pelo mesmo modelo. Como os vetores são normalizados, a similaridade de cosseno pode ser calculada pelo produto escalar entre o vetor da consulta e a matriz de embeddings. Em seguida, os resultados são ordenados por pontuação e associados aos livros do catálogo por seus identificadores.
+Durante a indexação, os textos recebem o prefixo `passage:`, conforme a convenção de uso do E5. O script `scripts/build_embeddings.py` gera embeddings normalizados de 384 dimensões e os armazena em um arquivo NumPy (`.npz`).
 
-As funções `compute_similarities()` e `get_top_k_indices()` já foram implementadas e testadas, e o fluxo de busca foi executado manualmente com livros reais. A integração dessas etapas em um componente `SemanticRetriever`, reutilizável pela aplicação, ainda está em desenvolvimento.
+Na busca, a consulta recebe o prefixo `query:` e é transformada em um embedding pelo mesmo modelo. A similaridade é calculada por produto escalar entre os vetores normalizados, e os resultados são ordenados pela proximidade com a consulta.
 
-Durante os testes, identificou-se uma limitação da primeira abordagem: 423 dos 469 textos (90,2%) ultrapassavam o limite de 128 tokens do modelo inicialmente utilizado. Isso motivou a adoção do Multilingual E5 Small e a reconstrução do índice. A recuperação já funciona experimentalmente, mas a relevância dos resultados ainda não foi medida com um conjunto formal de avaliação.
+O `SemanticRetriever`, em `src/bookmatch/retrieval/retriever.py`, reúne essas operações e permite realizar buscas por texto ou diretamente por vetor.
 
-## Aplicação e arquitetura prevista
+O índice é construído previamente, evitando recalcular os embeddings de todos os livros durante as consultas.
 
-A aplicação terá dois modos de descoberta. No primeiro, a pessoa descreve o que deseja ler, indicando temas, gêneros ou características narrativas. Essa descrição será transformada em uma consulta semântica ao catálogo.
+A relevância dos resultados ainda não foi avaliada sistematicamente com consultas e julgamentos de relevância específicos para o catálogo literário.
 
-No segundo, será possível selecionar até três livros de referência, inclusive obras escritas em outros idiomas. A integração prevista com a Apple Books permitirá localizar essas obras e obter os metadados disponíveis. Os textos das referências serão convertidos em embeddings e combinados para formar uma representação da preferência do usuário. O usuário também poderá informar quais características desses livros deseja encontrar em outra leitura. A agregação dos vetores será uma estratégia inicial, sujeita a ajustes conforme os testes.
+## Modos de busca
 
-Os dois modos compartilharão o mesmo recuperador semântico. Os livros mais próximos serão enviados a um componente responsável por organizar o contexto do RAG. Um LLM receberá a consulta e os metadados recuperados para gerar sugestões acompanhadas de justificativas. A resposta deverá mencionar apenas obras presentes no catálogo e evitar atribuir a elas características que não estejam sustentadas pelos dados.
+A interface Streamlit oferece dois modos de descoberta.
 
-A interface será desenvolvida com Streamlit, priorizando uma experiência simples de descoberta literária. A integração com a Apple Books, o pipeline RAG, a geração das respostas e a interface ainda não estão implementados.
+### Busca por preferências
 
-O fluxo pretendido é:
+O usuário descreve o tipo de livro que deseja encontrar, utilizando linguagem natural.
+
+Por exemplo:
+
+> Um romance sobre memórias de família, com uma atmosfera melancólica e personagens complexos.
+
+A descrição é transformada em um embedding e utilizada para recuperar as obras mais próximas no catálogo.
+
+A busca não depende exclusivamente da presença das mesmas palavras na descrição dos livros, embora a qualidade dos resultados ainda dependa das informações disponíveis sobre cada obra.
+
+### Busca por livros de referência
+
+Também é possível procurar livros a partir de obras que o usuário já conhece.
+
+A interface utiliza a Apple Books para pesquisar livros e apresentar possíveis correspondências. O usuário seleciona de uma a três referências.
+
+As descrições dessas obras são utilizadas para construir representações semânticas, posteriormente combinadas em uma consulta ao índice local.
+
+Isso permite utilizar livros externos ao catálogo, inclusive escritos em outros idiomas, para buscar obras com características semelhantes.
+
+Os resultados da Apple Books passam por uma filtragem que exige identificador, título e descrição utilizável. A seleção da edição correta continua sendo responsabilidade do usuário.
+
+A implementação está concentrada nos módulos:
+
+- `bookmatch.integrations.apple_books`;
+- `bookmatch.recommendation.query_builder`;
+- `bookmatch.recommendation.reference_search`.
+
+Os dois modos utilizam o mesmo índice semântico para recuperar obras do catálogo.
+
+## Geração de recomendações com RAG
+
+Além da recuperação semântica, o projeto possui um pipeline RAG que utiliza um modelo de linguagem para gerar recomendações a partir dos livros encontrados.
+
+O fluxo separa a recuperação da geração. Primeiro, o sistema identifica as obras mais próximas da consulta. Depois, organiza os dados recuperados em um contexto enviado ao LLM.
+
+Os componentes estão em `src/bookmatch/rag/`:
+
+- `context_builder.py`: preparação das informações recuperadas;
+- `prompts.py`: instruções utilizadas na geração;
+- `llm.py`: integração com o modelo de linguagem;
+- `schemas.py`: estrutura das respostas;
+- `pipeline.py`: integração dos componentes.
+
+A geração utiliza Gemini por meio da integração com LangChain e uma estrutura de resposta definida com Pydantic.
+
+As recomendações devem se limitar aos livros recuperados e às características efetivamente disponíveis no catálogo.
+
+Entretanto, a utilização de RAG não elimina a possibilidade de afirmações incorretas. Descrições incompletas ou pouco informativas podem dificultar a identificação de semelhanças e comprometer as justificativas geradas.
+
+A qualidade das recomendações ainda precisa ser avaliada experimentalmente.
+
+## Interface
+
+A aplicação utiliza Streamlit e reúne os dois modos de busca em uma interface de descoberta literária.
+
+A interface permite pesquisar obras por preferências ou livros de referência, visualizar os resultados recuperados e utilizar o pipeline de geração de recomendações.
+
+O código principal está em `app.py`, enquanto os componentes visuais reutilizáveis ficam em `src/bookmatch/ui/`.
+
+O modelo e o índice são carregados com cache para evitar reinicializações desnecessárias durante as interações.
+
+As decisões relacionadas à interface e à busca por referências também estão registradas em `docs/learning/`.
+
+## Tecnologias
+
+- Python
+- Pandas e NumPy
+- Sentence Transformers
+- `intfloat/multilingual-e5-small`
+- Gemini API e LangChain
+- Pydantic
+- Streamlit
+- Pytest
+
+## Organização do projeto
 
 ```text
-Descrição livre ────────────────────────┐
-                                        ├─> Consulta semântica ─> Busca no catálogo
-Até 3 livros ─> Apple Books ─> Vetores ┘                         │
-                                                                  v
-                                                       Livros recuperados
-                                                                  │
-                                                                  v
-                                                        Contexto RAG + LLM
-                                                                  │
-                                                                  v
-                                                       Recomendações no chat
+bookmatch/
+├── app.py
+├── data/
+├── docs/
+│   ├── data/
+│   └── learning/
+├── experiments/
+├── notebooks/
+├── scripts/
+├── src/
+│   └── bookmatch/
+│       ├── catalog/
+│       ├── data/
+│       ├── integrations/
+│       ├── rag/
+│       ├── recommendation/
+│       ├── retrieval/
+│       └── ui/
+├── tests/
+└── pyproject.toml
 ```
 
-## Organização e execução
+O projeto separa a preparação dos dados, a recuperação, a geração de recomendações e a interface.
 
-O código principal está em `src/bookmatch/`, separado em módulos de dados, recuperação, recomendação, RAG e integração com modelos de linguagem. Os scripts de preparação e indexação ficam em `scripts/`, os testes automatizados em `tests/` e a documentação em `docs/`. Parte dessa estrutura já existe para acomodar as próximas etapas, mas nem todos os módulos estão implementados.
+Os notebooks e documentos são utilizados principalmente para exploração de dados e registro do aprendizado, enquanto a implementação principal está organizada em módulos Python.
 
-O projeto utiliza Python 3.10 ou superior. Para configurar o ambiente e executar os testes:
+## Como executar
+
+O projeto utiliza Python 3.10 ou superior.
+
+Para preparar o ambiente:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+
 python -m pip install -e ".[dev]"
+```
+
+Para executar os testes:
+
+```bash
 python -m pytest -v
 ```
 
-Com o catálogo disponível localmente em `data/processed/catalog_v0.csv`, o índice semântico pode ser gerado com:
+A aplicação depende do catálogo preparado e do índice semântico, que devem estar disponíveis em:
+
+```text
+data/processed/catalog_v0.csv
+data/processed/semantic_index_e5.npz
+```
+
+Com o catálogo disponível, o índice pode ser gerado por:
 
 ```bash
 python scripts/build_embeddings.py
 ```
 
-A geração do índice depende dos dados locais, que ainda não são redistribuídos. A execução completa da aplicação conversacional dependerá das integrações que estão em desenvolvimento.
+Para utilizar a geração com Gemini, é necessário configurar uma chave de API:
 
-## Próximos passos
+```bash
+read -r -s -p "Gemini API key: " GEMINI_API_KEY
+echo
+export GEMINI_API_KEY
+```
 
-As próximas etapas são concluir o recuperador semântico, implementar a busca por livros de referência, conectar o RAG a um modelo de linguagem e desenvolver a interface. Depois, o projeto poderá incorporar uma avaliação sistemática das recomendações, comparação com BM25 e experimentos de ajuste dos embeddings.
+Depois, a interface pode ser iniciada com:
+
+```bash
+python -m streamlit run app.py
+```
+
+Os dados processados não estão incluídos no repositório público. Portanto, a execução completa depende da disponibilidade de uma cópia local do catálogo.
+
+## Testes e avaliação
+
+O projeto possui testes automatizados para componentes de recuperação, construção do contexto, integração do pipeline e interface.
+
+Parte dos testes utiliza componentes simulados para verificar o comportamento do código sem depender de chamadas reais ao Gemini.
+
+A recuperação semântica já foi testada durante o desenvolvimento, mas ainda não existe uma avaliação quantitativa completa das recomendações literárias.
+
+A avaliação futura deverá considerar tanto a relevância dos livros recuperados quanto a qualidade das justificativas produzidas pelo LLM.
+
+## Limitações e próximos passos
+
+A principal limitação do projeto está relacionada à cobertura e à diversidade do catálogo. A base foi construída a partir de obras relacionadas ao Prêmio Oceanos, que possui um recorte literário específico e não representa toda a variedade de livros originalmente escritos em português.
+
+Durante os testes exploratórios de uso, essa limitação ficou evidente em buscas por livros com características diferentes das obras presentes no catálogo. Nesses casos, os resultados recuperados nem sempre correspondiam às preferências informadas, mesmo quando a busca semântica funcionava corretamente.
+
+Isso também afeta a geração com RAG, já que o modelo de linguagem depende das obras recuperadas para produzir suas recomendações. Quando o catálogo não contém livros suficientemente relacionados à consulta, a qualidade das recomendações e de suas justificativas fica comprometida.
+
+Além disso, as descrições literárias disponíveis variam em quantidade e qualidade, e ainda não foi realizada uma avaliação experimental sistemática da relevância das recomendações.
+
+Como próximos passos, estão previstos a ampliação e a diversificação do catálogo, priorizando obras de autores brasileiros, a construção de um conjunto de avaliação para recuperação e recomendação e a comparação entre diferentes estratégias de busca. Também poderão ser investigadas melhorias nos embeddings e na geração das justificativas.
