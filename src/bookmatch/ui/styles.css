@@ -1,0 +1,34 @@
+/*
+ * Identidade editorial: contraste discreto, tipografia e respiro.
+ * Apenas classes próprias (.bm-*). 
+ */
+.bm-brand {
+    margin: 0.25rem 0 0.25rem;
+    color: #302a27;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.35;
+}
+
+.bm-brand span {
+    color: #725d70;
+}
+
+.bm-eyebrow {
+    color: #725d70;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    margin: 1.1rem 0 0.5rem;
+}
+
+.bm-footer {
+    padding: 0.7rem 0 1rem;
+    color: #756e68;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.9rem;
+    font-style: italic;
+    text-align: center;
+}
