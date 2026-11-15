@@ -1,6 +1,6 @@
 # O Que Ler em Português?
 
-O Que Ler em Português? (BookMatch) é um projeto de descoberta literária que utiliza recuperação semântica e modelos de linguagem para recomendar livros originalmente escritos em português.
+O Que Ler em Português? é um projeto de descoberta literária que utiliza recuperação semântica e modelos de linguagem para recomendar livros originalmente escritos em português.
 
 A aplicação permite buscar obras a partir de uma descrição em linguagem natural ou de livros de referência. Em ambos os casos, a recuperação é realizada sobre um catálogo literário construído e preparado durante o desenvolvimento do projeto.
 
